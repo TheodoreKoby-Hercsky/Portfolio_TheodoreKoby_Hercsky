@@ -1,0 +1,133 @@
+---
+title: "Thoracic Surgery and Binary Classifier Assignment"
+author: "Theodore Koby-Hercsky"
+date: "5/20/2021"
+output: 
+  html_document: default 
+  word_document: default
+  pdf_document: default
+---
+
+```{r package, include=FALSE}
+# Markdown Basics
+#load packages needed
+pkgs <- c("moments", "ggplot2", "dplyr", "tidyr", "tidyverse", "effects", "statmod", "Rcmdr")
+install.packages(pkgs, repos = "http://cran.us.r-project.org")
+install.packages("lmtest", repos = "http://cran.us.r-project.org")
+install.packages("weatherData",repos = "http://cran.us.r-project.org")
+options(repos = c(CRAN = "http://cran.rstudio.com"))
+library(rmarkdown)
+library(readr)
+library(ggplot2)
+library(readxl)
+library(pastecs)
+library(psych)
+library(statmod)
+library(effects)
+# installed pander and created a pandoc grid table
+install.packages("pander")
+library(pander)
+#chunk options
+knitr::opts_chunk$set(
+	error = TRUE,
+	fig.align = "center",
+	message = FALSE,
+	warning = FALSE,
+	out.width = "90%",
+	size = "small",
+	tidy = FALSE)
+```
+
+
+## Set the working directory to the root of my week 10 Assignment directory
+setwd("~/Documents/Bellevue University Classes/DSC520/Week 10 Assignment")
+
+## The ThoracicSurgery.csv file and a summary of the data
+```{r}
+## I am importing readr from the library so I can use the read_csv function to create my Thoracic Surgery data frame.
+library(readr)
+## Creating the Thoracic Surgery data frame by using the read_csv function to pull my Thoracic Surgery data. 
+ThoracicSurgery <- read_csv("ThoracicSurgery.csv")
+## Creating the Thoracic Surgery data frame by using the read_csv function to pull my Thoracic Surgery data. 
+View(ThoracicSurgery)
+head(ThoracicSurgery)
+## As seen below we can use the summary function to analyze the descriptive statistics for this data set. As I have updated the names of all the variables and taken out unneeded characters in the csv file before uploading the file to my Rmarkdown report.
+summary(ThoracicSurgery)
+```
+
+
+## Fit a binary logistic regression model to the data set that predicts whether or not the patient survived for one year (the Risk1Y variable) after the surgery. Use the glm() function to perform the logistic regression. See Generalized Linear Models for an example. Include a summary using the summary() function in your results.
+
+```{r regression, include=TRUE}
+## I fit a binary logistic regression model to determine if the tumor size was 12 or above which will indicate a True. 
+ThoracicSurgery$Patiet_Predicts_Survival <- with(ThoracicSurgery, Tumor_Size >= 12 & Risk1Y >= 1)
+## to the data from the ThoracicSurgery data frame  by using an glm() function to perform a logistic regression.
+patient_surival_regression <- glm(Patiet_Predicts_Survival ~ Age + Asthma + Smoking + PAD + MI_6mo + Diabetes_Mellitus + Tumor_Size + Weakness + Cough + Dyspnoea + Haemoptysis + Pain + Performance + FEV1 + FVC + Diagnosis + Risk1Y, data = ThoracicSurgery, family = binomial(link = "logit"))
+
+## As seen below in the summary we see the Number of Fisher Scoring iterations being 25. While the Null deviance: 3.2698e+02  on 469 degrees of freedom which shows how well the response variable is predicted by a model that includes only the intercept.
+
+summary(patient_surival_regression)
+```
+
+
+
+## According to the summary, which variables had the greatest effect on the survival rate?
+```{r summary, include=TRUE}
+## As seen below we use the summary function to show a summary of our logistic regression.
+
+## In the summary function we see that the variables SmokingTRUE, HaemoptysisTRUE, and Diagnosis had the greatest negative effect while the variables Age, AsthmaTRUE, MI_6moTRUE, Diabetes_MellitusTRUE, Tumor_Size, and FEV1 greatest possitive effect on the survival rate as seen in the estimate.
+
+summary(patient_surival_regression)
+```
+
+
+## To compute the accuracy of your model, use the dataset to predict the outcome variable. The percent of correct predictions is the accuracy of your model. What is the accuracy of your model?
+
+```{r Accuracy, include=TRUE}
+## First I will pull up the summary of my updated ThoracicSurgery
+summary(ThoracicSurgery)
+## Next we can calculate the amount of Risk1Y that was a 1 for died within a year. This is calculated by taking the 470 amount of lines and multiply it by the mean 0.1489 which is seen as 470 * 0.1489 = 69.983. Which we see 70.
+data_set_deaths <- 470*0.1489
+data_set_deaths
+## While the predicted amount from our Patiet_Predicts_Survival shows 52 deaths s seen as the TRUE amount from our summary.
+Patiet_Predicts_Survival_amount <- 52
+Patiet_Predicts_Survival_amount
+## Finally we will take the Patiet_Predicts_Survival_amount and divide by the data_set_deaths which will give us the percent of accuracy of the model.
+percent_of_accuracy <- Patiet_Predicts_Survival_amount/data_set_deaths
+percent_of_accuracy
+```
+
+## The binary-classifier-data.csv file and a summary of the data
+```{r}
+## I am importing readr from the library so I can use the read_csv function to create my binary-classifier data frame.
+library(readr)
+## Creating the binary-classifier data frame by using the read_csv function to pull my binary-classifier data. 
+binary_classifier_data <- read_csv("data/binary-classifier-data.csv")
+## Creating the binary-classifier data frame by using the read_csv function to pull my binary-classifier data. 
+View(binary_classifier_data)
+head(binary_classifier_data)
+```
+
+## Fit a logistic regression model to the binary-classifier-data.csv dataset
+```{r fit, include=TRUE}
+## I fit a logistic regression model to determine if the x variable is greater than or equal to 32 and  y variable is greater than or equal to 45 which will show as true.
+binary_classifier_data$label_regression <- with(binary_classifier_data, x >= 32 & y >= 45)
+
+## I am going to use the glm() function to fit a logistic regression model with my new label regression variable.
+binary_classifier_regression <- glm(label_regression ~ label + x + y, data = binary_classifier_data, family = binomial())
+
+## As seen in our logistic regression model we see that the AIC is 292.94 and we have a Null Deviance of 1913.40  on 1497  degrees of freedom.
+summary(binary_classifier_regression)
+```
+
+## What is the accuracy of the logistic regression classifier?
+```{r logistic accuracy, include=TRUE}
+summary(binary_classifier_data)
+## I am going to view the summary of the binary_classifier_data and compare the mean of our labels to the percentage of true in the label regression.
+number_of_values_in_label_regression <- 504 +994
+percentage_of_true_label_regression <- 504/1498
+percentage_of_true_label_regression
+## This shows us that our accuracy in comparison to our label variable is less due to the label being 0.488  while the label_regression percent is 0.3364.
+```
+
+
